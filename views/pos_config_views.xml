@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_config_view_form_inherit_medicine" model="ir.ui.view">
+        <field name="name">pos.config.form.inherit.medicine</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//setting[@id='other_devices']" position="after">
+                <setting string="Medicinal Product Limit" help="Enable limits for medicinal products">
+                    <field name="limit_medicinal_products"/>
+                    <div class="content-group" invisible="not limit_medicinal_products">
+                        <div class="mt16 row">
+                            <label for="medicinal_limit" string="Maximum Quantity" class="col-lg-3 o_light_label"/>
+                            <field name="medicinal_limit"/>
+                        </div>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>
