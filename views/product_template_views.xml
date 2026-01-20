@@ -1,29 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="product_template_form_view_inherit_medicine" model="ir.ui.view">
-        <field name="name">product.template.form.inherit.medicine</field>
+    <record id="product_template_form_view_inherit_qty_limit" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.qty.limit</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="point_of_sale.product_template_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//div[@name='options']" position="inside">
                 <span class="d-inline-block">
-                    <field name="is_medicinal_product"/>
-                    <label for="is_medicinal_product"/>
+                    <field name="has_qty_limit"/>
+                    <label for="has_qty_limit"/>
                 </span>
             </xpath>
             <xpath expr="//group[@name='pos']" position="inside">
-                <field name="is_medicinal_product"/>
+                <field name="has_qty_limit"/>
+                <field name="is_unit_uom" readonly="1" invisible="not has_qty_limit"/>
             </xpath>
         </field>
     </record>
 
-    <record id="product_template_tree_view_inherit_medicine" model="ir.ui.view">
-        <field name="name">product.template.list.inherit.medicine</field>
+    <record id="product_template_tree_view_inherit_qty_limit" model="ir.ui.view">
+        <field name="name">product.template.list.inherit.qty.limit</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="point_of_sale.product_template_tree_view"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='available_in_pos']" position="after">
-                <field name="is_medicinal_product" optional="hide"/>
+                <field name="has_qty_limit" optional="hide"/>
             </xpath>
         </field>
     </record>

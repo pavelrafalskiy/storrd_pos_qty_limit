@@ -4,9 +4,9 @@ from odoo import fields, models
 class PosOrderLine(models.Model):
     _inherit = "pos.order.line"
 
-    is_medicinal_product = fields.Boolean(
-        related="product_id.is_medicinal_product",
-        string="Is Medicinal Product",
+    has_qty_limit = fields.Boolean(
+        related="product_id.has_qty_limit",
+        string="Has Quantity Limit",
         readonly=True,
         store=True,
     )

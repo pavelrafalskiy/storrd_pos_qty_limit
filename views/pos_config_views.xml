@@ -1,17 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="pos_config_view_form_inherit_medicine" model="ir.ui.view">
-        <field name="name">pos.config.form.inherit.medicine</field>
+    <record id="pos_config_view_form_inherit_qty_limit" model="ir.ui.view">
+        <field name="name">pos.config.form.inherit.qty.limit</field>
         <field name="model">pos.config</field>
         <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//setting[@id='other_devices']" position="after">
-                <setting string="Medicinal Product Limit" help="Enable limits for medicinal products">
-                    <field name="limit_medicinal_products"/>
-                    <div class="content-group" invisible="not limit_medicinal_products">
-                        <div class="mt16 row">
-                            <label for="medicinal_limit" string="Maximum Quantity" class="col-lg-3 o_light_label"/>
-                            <field name="medicinal_limit"/>
+                <setting string="Quantity Limits" help="Set maximum quantity allowed per transaction for restricted products.">
+                    <field name="enable_qty_limit"/>
+
+                    <div class="content-group" invisible="not enable_qty_limit">
+                        <div class="mt16 o_setting_sub_box">
+                            <div class="d-inline-flex flex-column border rounded overflow-hidden shadow-sm">
+
+                                <div class="d-flex border-bottom fw-bold bg-light small text-uppercase text-muted">
+                                    <div class="px-3 py-2 border-end" style="width: 120px;">Measure</div>
+                                    <div class="px-3 py-2 text-center" style="width: 90px;">Limit</div>
+                                </div>
+
+                                <div class="d-flex align-items-center bg-white text-nowrap">
+                                    <div class="px-3 py-2 border-end" style="width: 120px;">
+                                        <span class="o_light_label">Units</span>
+                                    </div>
+                                    <div class="px-3 py-2 text-center" style="width: 90px;">
+                                        <field name="max_qty_limit" class="fw-bold w-100 text-center"/>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </setting>
