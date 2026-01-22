@@ -1,15 +1,21 @@
 import { PosOrder } from "@point_of_sale/app/models/pos_order";
 import { PosOrderline } from "@point_of_sale/app/models/pos_order_line";
 import { PosStore } from "@point_of_sale/app/store/pos_store";
+import { OrderWidget } from "@point_of_sale/app/generic_components/order_widget/order_widget";
+import { ProductCard } from "@point_of_sale/app/generic_components/product_card/product_card";
+import { Orderline } from "@point_of_sale/app/generic_components/orderline/orderline";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
 import { sprintf } from "@web/core/utils/strings";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { useService } from "@web/core/utils/hooks";
 
 const TEXT = {
     TITLE: _t("Limit Reached"),
-    BODY: (limit) => sprintf(_t("Only %s units are permitted per transaction."), limit),
+    BODY: (limit) => sprintf(_t("Only %s restricted items per transaction permitted"), limit),
 };
+
+const state = { isInternalAction: false };
 
 patch(PosStore.prototype, {
     isQtyLimitEnabled() {
@@ -21,30 +27,15 @@ patch(PosStore.prototype, {
 });
 
 patch(PosOrder.prototype, {
-    hasQtyLimit(product) {
-        return product?.has_qty_limit || false;
-    },
-    isUnitMeasure(product) {
-        return product?.is_unit_uom || false;
-    },
-
     isRestricted(product) {
-        return this.hasQtyLimit(product) && this.isUnitMeasure(product);
+        const p = typeof product === 'number' ? this.pos.models["product.product"].get(product) : product;
+        return p?.has_qty_limit || false;
     },
 
-    _getRestrictedTotal(excludeLine = null) {
-        const lines = this.get_orderlines();
-        return lines
-            .filter(line => {
-                if (!line || !line.product_id) return false;
-
-                const product = typeof line.product_id === "number"
-                    ? this.pos.models["product.product"].get(line.product_id)
-                    : line.product_id;
-
-                return this.isRestricted(product) && line !== excludeLine;
-            })
-            .reduce((sum, line) => sum + (line.get_quantity() || 0), 0);
+    _getRestrictedTotal() {
+        return this.lines
+            .filter(line => line && line.product_id && this.isRestricted(line.product_id))
+            .reduce((sum, line) => sum + Math.ceil(line.get_quantity() || 0), 0);
     }
 });
 
@@ -53,33 +44,35 @@ patch(PosOrderline.prototype, {
         const order = this.order_id;
         const pos = order?.pos;
 
-        const product = typeof this.product_id === "number"
-            ? pos.models["product.product"].get(this.product_id)
-            : this.product_id;
+        if (state.isInternalAction) {
+            return super.set_quantity(...arguments);
+        }
 
-        if (pos?.isQtyLimitEnabled() && order?.isRestricted(product)) {
+        if (order?.finalized) {
+            return super.set_quantity(...arguments);
+        }
+
+        if (pos?.isQtyLimitEnabled() && order?.isRestricted(this.product_id)) {
             const limit = pos.getQtyLimitValue();
             const numQty = quantity === "delete" ? 0 : parseFloat(quantity || 0);
             const currentQty = this.get_quantity();
 
             if (quantity !== "delete" && !isNaN(numQty) && numQty > currentQty) {
-                let total = order._getRestrictedTotal(this) + numQty;
 
-                const duplicateLine = order.lines.find(l => {
-                    if (l === this || !l.product_id) return false;
-                    const lId = l.product_id.id || l.product_id;
-                    const thisId = product.id || product;
-                    return lId === thisId && l.can_be_merged_with(this);
-                });
+                const totalInOrder = order._getRestrictedTotal();
+                const totalWithChange = totalInOrder - Math.ceil(currentQty) + Math.ceil(numQty);
 
-                if (duplicateLine) total -= duplicateLine.get_quantity();
+                if (totalWithChange > limit) {
 
-                if (total > limit) {
+                    if (pos.numberBuffer) {
+                        pos.numberBuffer.reset();
+                    }
+
                     pos.env.services.dialog.add(AlertDialog, {
                         title: TEXT.TITLE,
                         body: TEXT.BODY(limit)
                     });
-                    return super.set_quantity(currentQty, keep_price);
+                    // return super.set_quantity(currentQty, keep_price);
                 }
             }
         }
@@ -89,18 +82,22 @@ patch(PosOrderline.prototype, {
 
 patch(PosStore.prototype, {
     async addLineToCurrentOrder(vals, opts = {}) {
-
         const product = typeof vals.product_id === "number"
             ? this.models["product.product"].get(vals.product_id)
             : vals.product_id;
 
-        const currentOrder = this.get_order();
+        const order = this.get_order();
 
-        if (this.isQtyLimitEnabled() && currentOrder?.isRestricted(product)) {
+        if (order && this.isQtyLimitEnabled() && order.isRestricted(product)) {
+
             const limit = this.getQtyLimitValue();
-            const currentTotal = currentOrder._getRestrictedTotal();
             const addingQty = vals.qty || 1;
-            if (currentTotal + addingQty > limit) {
+            const currentTotal = order._getRestrictedTotal();
+
+            if (currentTotal + Math.ceil(addingQty) > limit) {
+
+                this.numberBuffer?.reset();
+
                 this.env.services.dialog.add(AlertDialog, {
                     title: TEXT.TITLE,
                     body: TEXT.BODY(limit),
@@ -108,6 +105,34 @@ patch(PosStore.prototype, {
                 return false;
             }
         }
-        return super.addLineToCurrentOrder(...arguments);
+
+        state.isInternalAction = true;
+        try {
+            return await super.addLineToCurrentOrder(...arguments);
+        } finally {
+            state.isInternalAction = false;
+        }
     }
+});
+
+patch(PosOrderline.prototype, {
+    getDisplayData() {
+        return {
+            ...super.getDisplayData(),
+            has_qty_limit: this.product_id.has_qty_limit,
+        };
+    }
+});
+
+Orderline.props.line.shape.has_qty_limit = { type: Boolean, optional: true };
+
+const componentsToPatch = [Orderline, ProductCard, OrderWidget];
+
+componentsToPatch.forEach((component) => {
+    patch(component.prototype, {
+        setup() {
+            super.setup(...arguments);
+            this.pos = useService("pos");
+        },
+    });
 });

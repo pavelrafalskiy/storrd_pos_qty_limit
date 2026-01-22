@@ -13,7 +13,6 @@
             </xpath>
             <xpath expr="//group[@name='pos']" position="inside">
                 <field name="has_qty_limit"/>
-                <field name="is_unit_uom" readonly="1" invisible="not has_qty_limit"/>
             </xpath>
         </field>
     </record>

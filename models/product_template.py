@@ -11,24 +11,16 @@ class ProductTemplate(models.Model):
         store=True,
     )
 
-    is_unit_uom = fields.Boolean(
-        compute="_compute_is_unit_uom",
-        store=True,
-        readonly=True,
-    )
-
-    @api.depends("uom_id")
-    def _compute_is_unit_uom(self):
-        unit_uom = self.env.ref("uom.product_uom_unit", raise_if_not_found=False)
-        for record in self:
-            record.is_unit_uom = record.uom_id == unit_uom
-
 
 class ProductProduct(models.Model):
     _inherit = "product.product"
 
     @api.model
     def _load_pos_data_fields(self, config_id):
+        """Extend the list of product fields loaded into the POS UI to include
+        the quantity limit flag.
+        """
         fields = super()._load_pos_data_fields(config_id)
-        fields += ["has_qty_limit", "is_unit_uom"]
+        if "has_qty_limit" not in fields:
+            fields.append("has_qty_limit")
         return fields

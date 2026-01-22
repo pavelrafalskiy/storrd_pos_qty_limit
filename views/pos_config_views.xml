@@ -6,27 +6,12 @@
         <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//setting[@id='other_devices']" position="after">
-                <setting string="Quantity Limits" help="Set maximum quantity allowed per transaction for restricted products.">
+                <setting string="Quantity Limits" help="Set maximum total quantity allowed per transaction for restricted products.">
                     <field name="enable_qty_limit"/>
-
                     <div class="content-group" invisible="not enable_qty_limit">
-                        <div class="mt16 o_setting_sub_box">
-                            <div class="d-inline-flex flex-column border rounded overflow-hidden shadow-sm">
-
-                                <div class="d-flex border-bottom fw-bold bg-light small text-uppercase text-muted">
-                                    <div class="px-3 py-2 border-end" style="width: 120px;">Measure</div>
-                                    <div class="px-3 py-2 text-center" style="width: 90px;">Limit</div>
-                                </div>
-
-                                <div class="d-flex align-items-center bg-white text-nowrap">
-                                    <div class="px-3 py-2 border-end" style="width: 120px;">
-                                        <span class="o_light_label">Units</span>
-                                    </div>
-                                    <div class="px-3 py-2 text-center" style="width: 90px;">
-                                        <field name="max_qty_limit" class="fw-bold w-100 text-center"/>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="mt16 d-flex align-items-center">
+                            <span class="fw-bold me-2">Limit: </span>
+                            <field name="max_qty_limit" class="oe_inline fw-bold text-center" style="width: 60px;"/>
                         </div>
                     </div>
                 </setting>

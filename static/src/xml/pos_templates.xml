@@ -1,0 +1,59 @@
+<templates id="template" xml:space="preserve">
+
+    <t t-name="storrd_pos_qty_limit.ProductCard" t-inherit="point_of_sale.ProductCard" t-inherit-mode="extension">
+        <xpath expr="//article" position="inside">
+            <t t-set="posService" t-value="this.pos || env.services.pos"/>
+            <t t-set="product" t-value="posService.models['product.product'].get(props.productId)"/>
+
+            <div t-if="posService.isQtyLimitEnabled() and product and product.has_qty_limit"
+                 class="bg-warning text-center fw-bolder text-uppercase py-1 rounded-bottom-3"
+                 style="font-size: 0.55rem; letter-spacing: 0.5px; color: #000; border-top: 1px solid rgba(0,0,0,0.05);">
+                <i class="fa fa-exclamation-triangle me-1"/>Qty Limit
+            </div>
+        </xpath>
+    </t>
+
+    <t t-name="storrd_pos_qty_limit.Orderline" t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('product-name')]/span" position="before">
+            <t t-set="posService" t-value="this.pos || env.services.pos"/>
+            <t t-if="posService.isQtyLimitEnabled() and props.line.has_qty_limit and posService.mainScreen.component.name == 'ProductScreen'">
+                <span class="badge rounded-pill text-bg-warning text-dark me-1 shadow-sm"
+                      style="font-size: 0.55rem; padding: 2px 4px; vertical-align: middle;"
+                      title="This item has a quantity limit">
+                    <i class="fa fa-info-circle"/>
+                </span>
+            </t>
+        </xpath>
+    </t>
+
+    <t t-name="storrd_pos_qty_limit.OrderWidget" t-inherit="point_of_sale.OrderWidget" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('order-container')]" position="before">
+            <t t-set="posService" t-value="this.pos || env.services.pos"/>
+
+            <t t-if="posService.mainScreen.component.name == 'ProductScreen' and posService.isQtyLimitEnabled()">
+                <t t-set="currentOrder" t-value="posService.get_order()"/>
+
+                <t t-if="currentOrder">
+                    <t t-set="restrictedTotal" t-value="currentOrder._getRestrictedTotal()"/>
+                    <t t-set="maxLimit" t-value="posService.getQtyLimitValue()"/>
+                    <t t-set="isFull" t-value="restrictedTotal >= maxLimit"/>
+
+                    <div t-if="restrictedTotal > 0"
+                         t-attf-class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom shadow-sm {{ isFull ? 'bg-danger-subtle' : 'bg-warning-subtle' }}"
+                         style="height: 42px;">
+
+                        <div t-attf-class="d-flex align-items-center fw-bold small text-uppercase {{ isFull ? 'text-danger' : 'text-warning' }}">
+                            <i t-attf-class="fa {{ isFull ? 'fa-exclamation-circle' : 'fa-info-circle' }} me-2"/>
+                            <span t-esc="isFull ? 'Restricted Items Limit Reached' : 'Items with Limit'"/>
+                        </div>
+
+                        <div t-attf-class="badge rounded-pill shadow-sm {{ isFull ? 'text-bg-danger' : 'text-bg-warning text-dark' }}"
+                             style="font-size: 0.85rem;">
+                            <t t-esc="restrictedTotal"/> / <t t-esc="maxLimit"/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </xpath>
+    </t>
+</templates>
